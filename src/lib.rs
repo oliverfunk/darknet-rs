@@ -54,14 +54,14 @@ pub fn load_network<P: AsRef<Path>>(
     Ok(Network(network))
 }
 
-pub fn forward_network(network: &Network) {
+pub fn forward_network(network: &mut Network) {
     unsafe { ffi::forward_network(network.0) }
 }
 
-pub fn backward_network(network: &Network) {
+pub fn backward_network(network: &mut Network) {
     unsafe { ffi::backward_network(network.0) }
 }
 
-pub fn update_network(network: &Network) {
+pub fn update_network(network: &mut Network) {
     unsafe { ffi::update_network(network.0) }
 }
