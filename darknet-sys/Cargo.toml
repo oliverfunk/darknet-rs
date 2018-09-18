@@ -1,0 +1,27 @@
+[package]
+name = "darknet-sys"
+version = "0.1.0"
+authors = ["Oliver Funk <oli.funk@gmail.com >", "Brandon Hamilton <brandon.hamilton@gmail.com>"]
+description = "Native rust bindings for darknet"
+license = "MIT"
+readme = "README.md"
+keywords = [ "ffi", "darknet" ]
+edition = "2018"
+
+build = "build.rs"
+links = "darknet"
+
+[features]
+default = [ "static" ]
+static = []
+opencv = []
+gpu = []
+cudnn = []
+
+[dependencies]
+libc = "0.2"
+
+[build-dependencies]
+cc = { version = "^1.0", features = ["parallel"] }
+make-cmd = "0.1"
+bindgen = "0.40"

@@ -1,0 +1,1 @@
+src/convolutional_kernels.cu src/deconvolutional_kernels.cu src/activation_kernels.cu src/im2col_kernels.cu src/col2im_kernels.cu src/blas_kernels.cu src/crop_layer_kernels.cu src/dropout_layer_kernels.cu src/maxpool_layer_kernels.cu src/avgpool_layer_kernels.cu
