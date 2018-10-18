@@ -6,7 +6,6 @@ description = "Native rust bindings for darknet"
 license = "MIT"
 readme = "README.md"
 keywords = [ "ffi", "darknet" ]
-edition = "2018"
 
 build = "build.rs"
 links = "darknet"
