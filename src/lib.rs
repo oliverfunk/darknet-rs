@@ -5,7 +5,7 @@ extern crate libc;
 
 mod errors;
 
-use ::errors::Error;
+use errors::Error;
 use std::ffi::CString;
 use std::path::Path;
 use std::ptr;
@@ -13,7 +13,7 @@ use std::ptr;
 /// A wrapper for a darknet network
 pub struct Network(*mut ffi::network);
 
-// Free the underlying network when it goes out of scope
+/// Free the underlying network when it goes out of scope
 impl Drop for Network {
     fn drop(&mut self) {
         unsafe { ffi::free_network(self.0) }
@@ -40,7 +40,8 @@ pub fn load_network<P: AsRef<Path>>(
                     "Failed to convert weight file path to CString when loading network."
                         .to_string(),
                 )
-            })?.as_ptr(),
+            })?
+            .as_ptr(),
         None => ptr::null_mut(),
     };
 
@@ -51,6 +52,7 @@ pub fn load_network<P: AsRef<Path>>(
             clear as i32,
         )
     };
+
     Ok(Network(network))
 }
 
@@ -65,3 +67,68 @@ pub fn backward_network(network: &mut Network) {
 pub fn update_network(network: &mut Network) {
     unsafe { ffi::update_network(network.0) }
 }
+
+/// A wrapper for a darknet image
+pub struct Image(ffi::image);
+
+impl Drop for Image {
+    fn drop(&mut self) {
+        unsafe { ffi::free_image(self.0) }
+    }
+}
+
+pub fn load_image_color<P: AsRef<Path>>(
+    image_filepath: P,
+    width: i32,
+    height: i32,
+) -> Result<Image, Error> {
+    let image_filepath_c = CString::new(image_filepath.as_ref().to_string_lossy().as_bytes())
+        .map_err(|_| Error::new("Error converting image_filepath into a CString".to_string()))?;
+
+    let image =
+        unsafe { ffi::load_image_color(image_filepath_c.as_ptr() as *mut _, width, height) };
+
+    Ok(Image(image))
+}
+
+pub struct Alphabet(*mut *mut ffi::image);
+
+pub fn load_alphabet() -> Alphabet {
+    Alphabet(unsafe { ffi::load_alphabet() })
+}
+
+pub struct Detection(*mut ffi::detection);
+
+pub struct Names(*mut *mut ::std::os::raw::c_char);
+
+pub fn draw_detections(
+    img: Image,
+    dets: Detection,
+    num: i32,
+    thresh: f32,
+    names: Names,
+    alphabet: Alphabet,
+    classes: i32,
+) {
+    unsafe {
+        ffi::draw_detections(
+            img.0,
+            dets.0,
+            num,
+            thresh,
+            names.0,
+            alphabet.0,
+            classes,
+        )
+    }
+}
+
+pub fn free_detections(dets: &mut Detection, n:i32) {
+    unsafe {ffi::free_detections(dets.0, n)}
+}
+
+
+//#[cfg(test)]
+//mod tests {
+//    fn asdasd
+//}
