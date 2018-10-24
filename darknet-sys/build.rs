@@ -5,7 +5,7 @@ use std::env;
 use std::path::{PathBuf, Path};
 use std::process::{Command};
 
-/// Generate Rust bindings to the C library
+/// Generate Rust FFI bindings to the C library
 fn bindgen_darknet() {
     let bindings = bindgen::Builder::default()
         .header("darknet/include/darknet.h")
