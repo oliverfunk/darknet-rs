@@ -21,7 +21,7 @@ pub fn load_metadata<P: AsRef<Path>>(metadata_file_path: P) -> Result<Metadata, 
             )
         })?;
 
-    let md = unsafe { ffi::get_metadata(metadata_file_path_c.as_ptr()) };
+    let md = unsafe { ffi::get_metadata(metadata_file_path_c.as_ptr() as *mut _) };
 
     Ok(Metadata(md))
 }
@@ -53,30 +53,39 @@ pub fn load_network<P: AsRef<Path>>(
             )
         })?;
 
-    let weights_path_c = match weights_path {
-        Some(w_path) => CString::new(w_path.as_ref().to_string_lossy().as_bytes())
-            .map_err(|_| {
-                Error::new(
-                    "Failed to convert weight file path to CString when loading network."
-                        .to_string(),
-                )
-            })?
-            .as_ptr(),
-        None => ptr::null_mut(),
-    };
+    let network = match weights_path {
+        Some(w_path) => {
+            let weights_path_c = CString::new(w_path.as_ref().to_string_lossy().as_bytes())
+                .map_err(|_| {
+                    Error::new(
+                        "Failed to convert weight file path to CString when loading network."
+                            .to_string(),
+                    )
+                })?;
 
-    let network = unsafe {
-        ffi::load_network(
-            config_path_c.as_ptr() as *mut _,
-            weights_path_c as *mut _,
-            clear as i32,
-        )
+            unsafe {
+                ffi::load_network(
+                    config_path_c.as_ptr() as *mut _,
+                    weights_path_c.as_ptr() as *mut _,
+                    clear as i32,
+                )
+            }
+        }
+        None => unsafe {
+            ffi::load_network(
+                config_path_c.as_ptr() as *mut _,
+                ptr::null_mut() as *mut _,
+                clear as i32,
+            )
+        },
     };
 
     Ok(Network(network))
 }
 
-pub fn predict_image(network: &mut Network, image: Image) {
+//pub fn load
+
+pub fn predict_image(network: &mut Network, image: &Image) {
     unsafe { ffi::network_predict_image(network.0, image.0) };
 }
 
@@ -115,21 +124,24 @@ pub fn load_image_color<P: AsRef<Path>>(
     Ok(Image(image))
 }
 
-pub fn resize_image(im: Image, w: i32, h: i32) -> Image {
-    let resize_image = unsafe {ffi::resize_image(im.0, w, h)};
+pub fn resize_image(im: &Image, w: i32, h: i32) -> Image {
+    let resize_image = unsafe { ffi::resize_image(im.0, w, h) };
 
     Image(resize_image)
 }
 
+pub fn save_image(im: &Image, image_file_name: &str) {
+    let image_fn_c = CString::new(image_file_name.to_string().as_bytes())
+        .map_err(|_| Error::new("Error converting image name into a CString".to_string()))
+        .unwrap();
+
+    unsafe { ffi::save_image(im.0, image_fn_c.as_ptr()) }
+}
+
 pub struct Detection(*mut ffi::detection);
 
-pub fn do_nms_obj (
-    dets: &mut Detection,
-    total: i32,
-    classes: i32,
-    thresh: f32,
-) {
-    unsafe {ffi::do_nms_obj(dets.0, total, classes, thresh)}
+pub fn do_nms_obj(dets: &mut Detection, total: i32, classes: i32, thresh: f32) {
+    unsafe { ffi::do_nms_obj(dets.0, total, classes, thresh) }
 }
 
 pub fn get_network_boxes(
@@ -145,7 +157,7 @@ pub fn get_network_boxes(
     let m = map as *mut i32;
     let n = num as *mut i32;
 
-    let det = unsafe {ffi::get_network_boxes(net.0, w, h, thresh, hier, m, relative, n)};
+    let det = unsafe { ffi::get_network_boxes(net.0, w, h, thresh, hier, m, relative, n) };
 
     Detection(det)
 }
@@ -158,12 +170,22 @@ pub fn load_alphabet() -> Alphabet {
 
 pub struct Names(*mut *mut ::std::os::raw::c_char);
 
-pub fn load_names(names_arr: Vec<&str>) -> Names {
-    let mut ptr: *const i8 = std::mem::uninitialized();
+pub fn load_names(names_arr: Vec<&str>) -> Result<Names, Error> {
+    let mut names_c: Vec<*mut u8> = Vec::new();
+
+    for s in names_arr {
+        let name_c = CString::new(s.to_string().as_bytes())
+            .map_err(|_| Error::new("Error converting name into a CString".to_string()))?
+            .as_ptr();
+
+        names_c.push(name_c as *mut _);
+    }
+
+    Ok(Names(names_c.as_ptr() as *mut _))
 }
 
 pub fn draw_detections(
-    img: Image,
+    img: &Image,
     dets: Detection,
     num: i32,
     thresh: f32,
