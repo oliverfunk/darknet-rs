@@ -5,7 +5,7 @@ extern crate libc;
 
 mod errors;
 
-use errors::Error;
+use crate::errors::Error;
 use std::ffi::CString;
 use std::path::Path;
 use std::ptr;
