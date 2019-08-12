@@ -6,6 +6,7 @@ description = "Rust bindings for darknet"
 license = "MIT"
 readme = "README.md"
 keywords = ["darknet", "cnn", "neural network"]
+edition = "2018"
 
 [dependencies]
 libc = "0.2"
